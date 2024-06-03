@@ -159,7 +159,8 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          android-recovery/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/${{ github.event.inputs.BUILD_TARGET }}.img
+          android-recovery/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/${{ github.event.inputs.BUILD_TARGET }}.img 
+          android-recovery/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/${{ github.event.inputs.BUILD_TARGET }}.tar
         name: Unofficial TWRP for ${{ github.event.inputs.DEVICE_NAME }} // ${{ env.BUILD_DATE }}
         tag_name: ${{ github.run_id }}
         body: |
@@ -172,7 +173,8 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          android-recovery/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/vendor_boot.img
+          android-recovery/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/vendor_boot.img 
+          android-recovery/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/vendor_boot.tar
         name: Unofficial TWRP for ${{ github.event.inputs.DEVICE_NAME }} // ${{ env.BUILD_DATE }}
         tag_name: ${{ github.run_id }}
         body: |
