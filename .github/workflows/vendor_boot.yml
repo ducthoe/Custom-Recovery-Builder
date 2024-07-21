@@ -1,0 +1,248 @@
+name: Recovery Builder - TWRP
+
+on:
+  workflow_dispatch:
+    inputs:
+      MANIFEST_BRANCH:
+        description: 'TWRP Minimal-Manifest Branch'
+        required: true
+        default: ''
+        type: choice
+        options:
+        - twrp-12.1
+        - twrp-11
+        - twrp-9.0
+      DEVICE_TREE:
+        description: 'Custom Recovery Tree'
+        required: true
+        default: 'https://github.com/Lyinceer/twrp_device_samsung_a55x.git'
+      DEVICE_TREE_BRANCH:
+        description: 'Custom Recovery Tree Branch'
+        required: true
+        default: 'twrp-12.1'
+      DEVICE_PATH:
+        description: 'Specify your Device Path'
+        required: true
+        default: 'device/samsung/a55x'
+      DEVICE_NAME:
+        description: 'Specify your Device Codename'
+        required: true
+        default: 'a55x'
+      BUILD_TARGET:
+        description: 'Specify your Build Target'
+        required: true
+        default: 'recovery'
+        type: choice
+        options:
+        - boot
+        - recovery
+        - vendorboot
+      STOCK_VENDOR_BOOT_URL:
+        description: 'URL to download stock vendor_boot.img'
+        required: true
+        default: 'https://download1588.mediafire.com/muhwdrnbmgxgP-PvYtLT3avCAI7ea0pjw5FDfHCjpY19JGp5DisladL5lnvzC0TU4OtiYj7aX-x_xGZHAmj696iwo6YMdgkH0XpEhTvcRTaX1iyP9MptAfFKhaVukTVTme3qihhXvOLTsUS3iRpPfBY6Z5-KpuQWRabnph7SFF8uUQ/g9yfmnpan1oak4n/vendor_boot.img'
+      LDCHECK:
+        description: 'Path of blobs to check'
+        required: true
+        default: 'system/bin/tzdaemon'
+
+jobs:
+  build:
+    name: Build TWRP by ${{ github.actor }}
+    runs-on: ubuntu-20.04
+    if: github.event.repository.owner.id == github.event.sender.id
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      contents: write
+    steps:
+    - name: Check Out
+      uses: actions/checkout@v4
+      
+    - name: Display Inputs
+      run: |
+        echo "Displaying variables/inputs."
+        echo "Manifest Branch: ${{ github.event.inputs.MANIFEST_BRANCH }}"
+        echo "Device Tree: ${{ github.event.inputs.DEVICE_TREE }}"
+        echo "Device Branch: ${{ github.event.inputs.DEVICE_TREE_BRANCH }}"
+        echo "Device Path: ${{ github.event.inputs.DEVICE_PATH }}"
+        echo "Device Name: ${{ github.event.inputs.DEVICE_NAME }}"
+        echo "Build Target: ${{ github.event.inputs.BUILD_TARGET }}image"
+
+    - name: Cleanup
+      uses: rokibhasansagar/slimhub_actions@main
+      
+    - name: Set Swap Space
+      uses: pierotofy/set-swap-space@master
+      with:
+        swap-size-gb: 12
+        
+    - name: Prepare the environment
+      run: |
+        sudo apt update
+        sudo apt -y upgrade
+        sudo apt -y install gperf gcc-multilib gcc-10-multilib g++-multilib g++-10-multilib libc6-dev lib32ncurses5-dev x11proto-core-dev libx11-dev tree lib32z-dev libgl1-mesa-dev libxml2-utils xsltproc bc ccache lib32readline-dev lib32z1-dev liblz4-tool libncurses5-dev libsdl1.2-dev libwxgtk3.0-gtk3-dev libxml2 lzop pngcrush schedtool squashfs-tools imagemagick libbz2-dev lzma ncftp qemu-user-static libstdc++-10-dev libtinfo5 libgflags-dev
+        sudo add-apt-repository universe
+        sudo apt -y install libncurses5
+
+    - name: Install OpenJDK
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'zulu'
+        java-version: '8'
+
+    - name: Install Git-Repo
+      run: |
+        mkdir ~/bin
+        curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+        chmod a+x ~/bin/repo
+        sudo ln -sf ~/bin/repo /usr/bin/repo
+
+    - name: Check Manifest Branch
+      uses: haya14busa/action-cond@v1
+      id: manifest
+      with:
+        cond: ${{ github.event.inputs.MANIFEST_BRANCH == 'twrp-11' || github.event.inputs.MANIFEST_BRANCH == 'twrp-12.1' }}
+        if_true: https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git
+        if_false: https://github.com/minimal-manifest-twrp/platform_manifest_twrp_omni.git
+
+    - name: Initialize Repo
+      run: |
+        mkdir android-recovery
+        cd android-recovery
+        git config --global user.name "${{ github.actor }}"
+        git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+        repo init --depth=1 -u ${{ steps.manifest.outputs.value }} -b ${{ github.event.inputs.MANIFEST_BRANCH }}
+        sed -i '/<remove-project name="platform\/external\/gflags"  \/>/d' .repo/manifests/remove-minimal.xml
+        
+    - name: Repo Sync
+      run: |
+        cd android-recovery
+        repo sync -j$(nproc --all) --force-sync
+      
+    - name: Clone Device Tree
+      run: |
+        cd android-recovery
+        git clone ${{ github.event.inputs.DEVICE_TREE }} -b ${{ github.event.inputs.DEVICE_TREE_BRANCH }} ./${{ github.event.inputs.DEVICE_PATH }}
+        cd ${{ github.event.inputs.DEVICE_PATH }}
+        echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
+
+    - name: Check Build Makefile
+      run: |
+        cd android-recovery
+        if [ -f ${{ github.event.inputs.DEVICE_PATH }}/twrp_${{ github.event.inputs.DEVICE_NAME}}.mk ]; then
+            echo "DEVICE_MAKEFILE=twrp_${{ github.event.inputs.DEVICE_NAME }}" >> $GITHUB_ENV
+        elif [ -f ${{ github.event.inputs.DEVICE_PATH }}/omni_${{ github.event.inputs.DEVICE_NAME}}.mk ]; then
+            echo "DEVICE_MAKEFILE=omni_${{ github.event.inputs.DEVICE_NAME }}" >> $GITHUB_ENV
+        else
+            echo "No recovery makefile file found!"
+        fi
+      continue-on-error: true
+      
+    - name: Install Python 2
+      if: github.event.inputs.MANIFEST_BRANCH != 'twrp-11' && github.event.inputs.MANIFEST_BRANCH != 'twrp-12.1'
+      run: |
+        sudo apt -y install python2
+        cd /usr/bin
+        sudo ln -sf python2 python
+
+    - name: Building Image 
+      run: |
+        cd android-recovery
+        source build/envsetup.sh
+        export ALLOW_MISSING_DEPENDENCIES=true
+        lunch ${{ env.DEVICE_MAKEFILE }}-eng && make clean && make ${{ github.event.inputs.BUILD_TARGET }}image -j$(nproc --all)
+        if [ ! -f out/target/product/${{ github.event.inputs.DEVICE_NAME }}/${{ github.event.inputs.BUILD_TARGET }}.img ]; then
+          echo "Build failed: ${{ github.event.inputs.BUILD_TARGET }}.img not found"
+          exit 1
+        fi
+        echo "Done building your ${{ github.event.inputs.BUILD_TARGET }}.img"
+      
+    - name: Set Build Date
+      run: echo "BUILD_DATE=$(date +%Y%m%d)" >> $GITHUB_ENV
+
+    - name: Prepare magiskboot
+      run: |
+        wget https://github.com/TeamWin/external_magisk-prebuilt/raw/android-12.1/prebuilt/magiskboot_x86_64 -O magiskboot
+        chmod a+x magiskboot
+        if [ ! -x magiskboot ]; then
+          echo "Failed to prepare magiskboot"
+          exit 1
+        fi
+
+    - name: Prepare workspace
+      run: |
+        mkdir -p workspace/stock/unpack workspace/twrp/unpack
+        if [ ! -d workspace/stock/unpack ] || [ ! -d workspace/twrp/unpack ]; then
+          echo "Failed to create workspace directories"
+          exit 1
+        fi
+
+    - name: Download stock vendor_boot.img
+      run: |
+        wget ${{ github.event.inputs.STOCK_VENDOR_BOOT_URL }} -O workspace/stock/stock-vb.img
+        if [ ! -f workspace/stock/stock-vb.img ]; then
+          echo "Failed to download stock vendor_boot.img"
+          exit 1
+        fi
+
+    - name: Copy TWRP vendor_boot.img
+      run: |
+        cp android-recovery/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/vendor_boot.img workspace/twrp/twrp-vb.img
+        if [ ! -f workspace/twrp/twrp-vb.img ]; then
+          echo "Failed to copy TWRP vendor_boot.img"
+          exit 1
+        fi
+
+    - name: Unpack vendor_boot images
+      run: |
+        for type in stock twrp; do
+          cd ${GITHUB_WORKSPACE}/workspace/${type}/unpack
+          ${GITHUB_WORKSPACE}/magiskboot unpack ../${type}-vb.img
+          if [ $? -ne 0 ]; then
+            echo "Failed to unpack ${type} vendor_boot.img"
+            exit 1
+          fi
+        done
+
+    - name: Replace vendor_ramdisk_recovery.cpio
+      run: |
+        cd ${GITHUB_WORKSPACE}/workspace
+        mv twrp/unpack/vendor_ramdisk_recovery.cpio stock/unpack/
+        cd stock/unpack
+        ${GITHUB_WORKSPACE}/magiskboot repack ${GITHUB_WORKSPACE}/workspace/stock/stock-vb.img new-vendor_boot.img
+        if [ ! -f new-vendor_boot.img ]; then
+          echo "Failed to create new vendor_boot.img"
+          exit 1
+        fi
+        mv new-vendor_boot.img ${GITHUB_WORKSPACE}/vendor_boot.img
+        cd ${GITHUB_WORKSPACE}
+        tar -cvf twrp-vendor_boot.tar vendor_boot.img
+    
+    - name: Upload to Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          android-recovery/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/${{ github.event.inputs.BUILD_TARGET }}.img 
+          android-recovery/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/${{ github.event.inputs.BUILD_TARGET }}.tar
+          twrp-vendor_boot.tar
+        name: Unofficial TWRP for ${{ github.event.inputs.DEVICE_NAME }} // ${{ env.BUILD_DATE }}
+        tag_name: ${{ github.run_id }}-patched
+        body: |
+          Build: ${{ github.event.inputs.MANIFEST_BRANCH }}
+          Device: [Device Tree/Branch](${{ github.event.inputs.DEVICE_TREE }}/tree/${{ github.event.inputs.DEVICE_TREE_BRANCH }})
+          Commit: Most recent [commit](${{ github.event.inputs.DEVICE_TREE }}/commit/${{ env.COMMIT_ID }}) during building.
+
+          # Flashable TWRP for ${{ github.event.inputs.DEVICE_NAME }}
+          ## Notes
+          The twrp-vendor_boot.tar can be flashed via ODIN software. This was built using ${{ github.event.inputs.DEVICE_NAME }} TWRP's vendor_boot.img and stock vendor_boot.img, by replacing stock's vendor_ramdisk_recovery.cpio with the one from the TWRP build.
+
+    - name: Run LDCheck
+      run: |
+        cd tools
+        mv -n libneeds ${GITHUB_WORKSPACE}/android-recovery/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/recovery/root/
+        mv -n ldcheck ${GITHUB_WORKSPACE}/android-recovery/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/recovery/root/
+        cd ../android-recovery/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/recovery/root
+        python3 ldcheck -p system/lib64:vendor/lib64:system/lib:vendor/lib -d ${{ github.event.inputs.LDCHECK }}
+        echo "Done checking missing dependencies. Review, and reconfigure your tree."
+      continue-on-error: true
