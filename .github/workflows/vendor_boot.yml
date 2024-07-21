@@ -40,7 +40,7 @@ on:
       STOCK_VENDOR_BOOT_URL:
         description: 'URL to download stock vendor_boot.img'
         required: true
-        default: 'https://download1588.mediafire.com/muhwdrnbmgxgP-PvYtLT3avCAI7ea0pjw5FDfHCjpY19JGp5DisladL5lnvzC0TU4OtiYj7aX-x_xGZHAmj696iwo6YMdgkH0XpEhTvcRTaX1iyP9MptAfFKhaVukTVTme3qihhXvOLTsUS3iRpPfBY6Z5-KpuQWRabnph7SFF8uUQ/g9yfmnpan1oak4n/vendor_boot.img'
+        default: 'https://dumps.tadiphone.dev/dumps/samsung/a55x/-/raw/a55xnaxx-user-14-UP1A.231005.007-A556BXXS2AXD3-release-keys/vendor_boot.img?'
       LDCHECK:
         description: 'Path of blobs to check'
         required: true
