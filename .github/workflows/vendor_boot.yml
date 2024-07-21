@@ -40,7 +40,7 @@ on:
       STOCK_VENDOR_BOOT_URL:
         description: 'URL to download stock vendor_boot.img'
         required: true
-        default: 'https://dumps.tadiphone.dev/dumps/samsung/a55x/-/raw/a55xnaxx-user-14-UP1A.231005.007-A556BXXS2AXD3-release-keys/vendor_boot.img?'
+        default: 'https://dumps.tadiphone.dev/dumps/samsung/a55x/-/raw/a55xnsxx-user-14-UP1A.231005.007-A556EXXS4AXF6-release-keys/vendor_boot.img?'
       LDCHECK:
         description: 'Path of blobs to check'
         required: true
