@@ -36,7 +36,7 @@ on:
         options:
         - boot
         - recovery
-        - vendorboot
+        - vendor_boot
       STOCK_VENDOR_BOOT_URL:
         description: 'URL to download stock vendor_boot.img'
         required: true
@@ -67,7 +67,7 @@ jobs:
         echo "Device Branch: ${{ github.event.inputs.DEVICE_TREE_BRANCH }}"
         echo "Device Path: ${{ github.event.inputs.DEVICE_PATH }}"
         echo "Device Name: ${{ github.event.inputs.DEVICE_NAME }}"
-        echo "Build Target: ${{ github.event.inputs.BUILD_TARGET }}image"
+        echo "Build Target: ${{ github.event.inputs.BUILD_TARGET }}"
 
     - name: Cleanup
       uses: rokibhasansagar/slimhub_actions@main
@@ -130,15 +130,15 @@ jobs:
     - name: Check Build Makefile
       run: |
         cd android-recovery
-        if [ -f ${{ github.event.inputs.DEVICE_PATH }}/twrp_${{ github.event.inputs.DEVICE_NAME}}.mk ]; then
+        if [ -f ${{ github.event.inputs.DEVICE_PATH }}/twrp_${{ github.event.inputs.DEVICE_NAME }}.mk ]; then
             echo "DEVICE_MAKEFILE=twrp_${{ github.event.inputs.DEVICE_NAME }}" >> $GITHUB_ENV
-        elif [ -f ${{ github.event.inputs.DEVICE_PATH }}/omni_${{ github.event.inputs.DEVICE_NAME}}.mk ]; then
+        elif [ -f ${{ github.event.inputs.DEVICE_PATH }}/omni_${{ github.event.inputs.DEVICE_NAME }}.mk ]; then
             echo "DEVICE_MAKEFILE=omni_${{ github.event.inputs.DEVICE_NAME }}" >> $GITHUB_ENV
         else
             echo "No recovery makefile file found!"
+            exit 1
         fi
-      continue-on-error: true
-      
+
     - name: Install Python 2
       if: github.event.inputs.MANIFEST_BRANCH != 'twrp-11' && github.event.inputs.MANIFEST_BRANCH != 'twrp-12.1'
       run: |
@@ -146,15 +146,22 @@ jobs:
         cd /usr/bin
         sudo ln -sf python2 python
 
-    - name: Building Image 
+        - name: Building Image 
       run: |
         cd android-recovery
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
-        lunch ${{ env.DEVICE_MAKEFILE }}-eng && make clean && make ${{ github.event.inputs.BUILD_TARGET }}image -j$(nproc --all)
-        if [ ! -f out/target/product/${{ github.event.inputs.DEVICE_NAME }}/${{ github.event.inputs.BUILD_TARGET }}.img ]; then
-          echo "Build failed: ${{ github.event.inputs.BUILD_TARGET }}.img not found"
-          exit 1
+        lunch ${{ env.DEVICE_MAKEFILE }}-eng && make clean && make ${{ github.event.inputs.BUILD_TARGET }}image -j4
+        if [ "${{ github.event.inputs.BUILD_TARGET }}" = "vendor_boot" ]; then
+          if [ ! -f out/target/product/${{ github.event.inputs.DEVICE_NAME }}/vendor_boot.img ]; then
+            echo "Build failed: vendor_boot.img not found"
+            exit 1
+          fi
+        else
+          if [ ! -f out/target/product/${{ github.event.inputs.DEVICE_NAME }}/${{ github.event.inputs.BUILD_TARGET }}.img ]; then
+            echo "Build failed: ${{ github.event.inputs.BUILD_TARGET }}.img not found"
+            exit 1
+          fi
         fi
         echo "Done building your ${{ github.event.inputs.BUILD_TARGET }}.img"
       
@@ -224,7 +231,6 @@ jobs:
       with:
         files: |
           android-recovery/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/${{ github.event.inputs.BUILD_TARGET }}.img 
-          android-recovery/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/${{ github.event.inputs.BUILD_TARGET }}.tar
           twrp-vendor_boot.tar
         name: Unofficial TWRP for ${{ github.event.inputs.DEVICE_NAME }} // ${{ env.BUILD_DATE }}
         tag_name: ${{ github.run_id }}-patched
