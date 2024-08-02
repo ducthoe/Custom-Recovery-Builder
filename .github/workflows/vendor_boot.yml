@@ -6,7 +6,7 @@ on:
       DEVICE_TREE:
         description: 'Device Tree URL eg. https://github.com/<owner>/<repo>'
         required: true
-        default: 'https://github.com/MrFluffyOven/android_device_samsung_a55x'
+        default: 'https://github.com/Lyinceer/twrp_device_samsung_a55x.git'
       DEVICE_BRANCH:
         description: 'Device Tree Branch, eg. twrp-12.1'
         required: true
