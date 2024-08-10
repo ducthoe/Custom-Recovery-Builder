@@ -106,7 +106,7 @@ jobs:
 
     - name: Download a copy of vendor_boot.img (stock)
       run: |
-        wget -O vendor_boot.img "https://dumps.tadiphone.dev/dumps/samsung/a55x/-/raw/a55xnsxx-user-14-UP1A.231005.007-A556EXXS4AXF6-release-keys/vendor_boot.img?"
+        wget -O vendor_boot.img "https://drive.google.com/uc?export=download&id=1fxjxtvOlU8vQgGF5VFD15jBBXGGSrBHj"
         mv vendor_boot.img workspace/stock/stock-vb.img
 
     - name: Make a copy of vendor_boot.img (twrp)
