@@ -2,9 +2,24 @@
 name: TWRP BUILDER - VENDOR_BOOT
 
 on:
-  push:
-    branches:
-      - 'twrp-12.1'
+  workflow_dispatch:
+    inputs:
+      DEVICE_TREE:
+        description: 'Device Tree URL eg. https://github.com/<owner>/<repo>'
+        required: true
+        default: 'https://github.com/Lyinceer/twrp_device_samsung_a55x.git'
+      DEVICE_BRANCH:
+        description: 'Device Tree Branch, eg. twrp-12.1'
+        required: true
+        default: 'twrp-12.1'
+      DEVICE_PATH:
+        description: 'Device Path, eg. device/vendor/codename'
+        required: true
+        default: 'device/samsung/a55x'
+      DEVICE_MAKEFILE:
+        description: 'Device Makefile, eg. twrp_codename'
+        required: true
+        default: 'twrp_a55x'
         
 jobs:
   build:
@@ -57,12 +72,12 @@ jobs:
         
     - name: Repo Sync
       run: |
-        cd twrp; repo sync -j$(nproc --all) --force-sync
+         twrp; repo sync -j$(nproc --all) --force-sync
       
     - name: Clone Device Tree
       run: |
-        cd twrp; git clone https://github.com/Lyinceer/twrp_device_samsung_a55x -b twrp-12.1 ./device/samsung/a55x
-        cd device/samsung/a55x
+        cd twrp; git clone ${{ inputs.DEVICE_TREE }} -b ${{ inputs.DEVICE_BRANCH }} ./${{ inputs.DEVICE_PATH }}
+        cd ${{ inputs.DEVICE_PATH }}
         echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
         echo "VERSION=$(cat version.mk | grep '^TW_DEVICE_VERSION' | awk '{print $3}')" >> $GITHUB_ENV
         echo "COMMIT_ID2=$(git log --pretty=format:"%H" --grep="Unofficial Build Release" | sed -n '2p')" >> $GITHUB_ENV
@@ -70,7 +85,7 @@ jobs:
     - name: Building Image 
       run: |
         cd twrp; source build/envsetup.sh; export ALLOW_MISSING_DEPENDENCIES=true
-        lunch twrp_a55x-eng; mka vendorbootimage
+        lunch ${{ inputs.DEVICE_MAKEFILE }}-eng; mka vendorbootimage
         cd out/target/product/a55x
         tar -cvf twrp-vendor_boot.tar vendor_boot.img
       
