@@ -1,10 +1,16 @@
 name: TWRP BUILDER-VENDOR_BOOT.yml
 
 on:
-  push:
-    branches:
-      - 'twrp-12.1'
-
+  workflow_dispatch:
+    inputs:
+      DEVICE_BRANCH:
+        description: 'Device Tree Branch, eg. twrp-12.1'
+        required: true
+        default: 'twrp-12.1'
+      DEVICE_PATH:
+        description: 'Device Path, eg. device/vendor/codename'
+        required: true
+        default: 'device/samsung/a55x'
         
 jobs:
   build:
@@ -61,7 +67,7 @@ jobs:
       
     - name: Clone Device Tree
       run: |
-        cd twrp; git clone https://github.com/Lyinceer/twrp_device_samsung_a55x -b twrp-12.1 ./device/samsung/a55x
+        cd twrp; git clone https://github.com/Lyinceer/twrp_device_samsung_a55x.git -b ${{ inputs.DEVICE_BRANCH }} ./${{ inputs.DEVICE_PATH }}
         cd device/samsung/a55x
         echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
         echo "COMMIT_ID2=$(git log --pretty=format:"%H" --grep="Unofficial Build Release" | sed -n '2p')" >> $GITHUB_ENV
