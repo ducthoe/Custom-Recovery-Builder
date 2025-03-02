@@ -136,3 +136,7 @@ jobs:
           # Flashable TWRP for a55x
           ## Notes
           This twrp-vendor_boot.tar can be flash via ODIN software. This was build using a55x twrp's vendor_boot.img and stock vendor_boot.img, by replacing stock's vendor_ramdisk_recovery.cpio using vendor_ramdisk_recovery.cpio from TWRP build.
+          ## What's New?
+          - 
+          ## Bugs and Errors
+          -
