@@ -102,7 +102,7 @@ jobs:
         mkdir -p workspace/twrp/unpack
     - name: Download a copy of vendor_boot.img (stock)
       run: |
-        wget -O vendor_boot.img "https://dumps.tadiphone.dev/dumps/samsung/a55x/-/raw/a55xnsxx-user-14-UP1A.231005.007-A556EXXS4AXH4-release-keys/vendor_boot.img?"
+        wget -O vendor_boot.img "https://filebin.net/f8azmdj1sss76cs8/vendor_boot.img"
         mv vendor_boot.img workspace/stock/stock-vb.img
     - name: Make a copy of vendor_boot.img (twrp)
       run: |
