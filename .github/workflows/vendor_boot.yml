@@ -6,7 +6,7 @@ on:
       DEVICE_TREE:
         description: 'Device Tree URL eg. https://github.com/<owner>/<repo>'
         required: true
-        default: 'https://github.com/Lyinceer/twrp_device_samsung_a55x.git'
+        default: 'https://github.com/ducthoe/twrp_devicetree_for_a556e.git'
       DEVICE_BRANCH:
         description: 'Device Tree Branch, eg. twrp-12.1'
         required: true
@@ -25,7 +25,7 @@ jobs:
     name: Build vendor_boot by ${{ github.actor }}
     runs-on: ubuntu-latest
     env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.MY_TOKEN }}
     permissions:
       contents: write
     steps:
