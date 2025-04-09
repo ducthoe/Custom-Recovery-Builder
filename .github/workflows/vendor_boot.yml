@@ -10,7 +10,7 @@ on:
       DEVICE_BRANCH:
         description: 'Device Tree Branch, eg. twrp-12.1'
         required: true
-        default: 'twrp-12.1'
+        default: 'main'
       DEVICE_PATH:
         description: 'Device Path, eg. device/vendor/codename'
         required: true
