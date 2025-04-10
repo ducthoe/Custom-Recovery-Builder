@@ -101,7 +101,7 @@ jobs:
         mkdir -p workspace/twrp/unpack
     - name: Download a copy of vendor_boot.img (stock)
       run: |
-        wget -O vendor_boot.img "https://github.com/ducthoe/twrp_devicetree_for_a556e/releases/download/stock_vendor/vendor_boot.img"
+        wget -O vendor_boot.img "https://dumps.tadiphone.dev/dumps/samsung/a55x/-/raw/a55xnsxx-user-14-UP1A.231005.007-A556EXXS5AXI4-release-keys/vendor_boot.img?inline=false"
         mv vendor_boot.img workspace/stock/stock-vb.img
     - name: Make a copy of vendor_boot.img (twrp)
       run: |
